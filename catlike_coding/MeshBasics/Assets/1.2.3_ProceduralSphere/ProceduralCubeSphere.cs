@@ -15,7 +15,7 @@ public class ProceduralCubeSphere : MonoBehaviour
     private Vector3[] normals;
     private Color32[] cubeUV;
 
-    void Start()
+    void Awake()
     {
         Generate();
     }
@@ -232,16 +232,5 @@ public class ProceduralCubeSphere : MonoBehaviour
         vertices[i] = normals[i] * radius;
         cubeUV[i] = new Color32((byte)x, (byte)y, (byte)z, 0);
     }
-    private void OnDrawGizmos()
-    {
-        if (vertices == null)
-            return;
-        for (int i = 0; i < vertices.Length; i++)
-        {
-            Gizmos.color = Color.black;
-            Gizmos.DrawSphere(vertices[i], 0.1f);
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawRay(vertices[i], normals[i]);
-        }
-    }
+
 }
