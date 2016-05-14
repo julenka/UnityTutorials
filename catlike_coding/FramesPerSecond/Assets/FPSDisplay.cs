@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(FPSCounter))]
@@ -18,16 +17,45 @@ public class FPSDisplay : MonoBehaviour
         "90", "91", "92", "93", "94", "95", "96", "97", "98", "99"
     };
 
-    public Text fpsLabel;
-
+    public Text averageFpsLabel;
+    public Text minFpsLabel;
+    public Text maxFpsLabel;
+    
     private FPSCounter fpsCounter;
 
+
+    [System.Serializable]
+    private struct FPSColor {
+        public Color color;
+        public int minimumFPS;
+    }
+    
+    [SerializeField]
+    private FPSColor[] coloring;
+    
     private void Start()
     {
         fpsCounter = GetComponent<FPSCounter>();
     }
     void Update()
     {
-        fpsLabel.text = stringsFrom00To99[Mathf.Clamp(fpsCounter.FPS, 0, 99)];
+        Display(averageFpsLabel, Mathf.Clamp(fpsCounter.AverageFPS, 0, 99));
+        Display(minFpsLabel, Mathf.Clamp(fpsCounter.MinFPS, 0, 99));
+        Display(maxFpsLabel, Mathf.Clamp(fpsCounter.MaxFPS, 0, 99));
+    }
+    
+    private void Display(Text label, int value)
+    {
+        label.text = stringsFrom00To99[value];
+        // Assumption: colors are in descending order
+        for (int i = 0; i < coloring.Length; i++)
+        {
+            var c = coloring[i];
+            if(value >= c.minimumFPS)
+            {
+                label.color = c.color;
+                break;
+            }
+        }
     }
 }
