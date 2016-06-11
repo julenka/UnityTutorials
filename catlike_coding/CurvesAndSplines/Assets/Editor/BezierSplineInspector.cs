@@ -27,7 +27,7 @@ public class BezierSplineInspector : Editor
 
         ShowDirections();
         Vector3 p0 = ShowPoint(0);
-        for (int i = 1; i < spline.points.Length; i += 3)
+        for (int i = 1; i < spline.ControlPointCount; i += 3)
         {
             Vector3 p1 = ShowPoint(i);
             Vector3 p2 = ShowPoint(i + 1);
@@ -44,12 +44,49 @@ public class BezierSplineInspector : Editor
 
     public override void OnInspectorGUI()
     {
-        DrawDefaultInspector();
         spline = target as BezierSpline;
+
+        EditorGUI.BeginChangeCheck();
+        bool loop = EditorGUILayout.Toggle("Loop", spline.Loop);
+        if (EditorGUI.EndChangeCheck())
+        {
+            Undo.RecordObject(spline, "Toggle Loop");
+            EditorUtility.SetDirty(spline);
+            spline.Loop = loop;
+        }
+
+        if (selectedIndex >= 0 && selectedIndex < spline.ControlPointCount)
+        {
+            DrawSelectedPointInspector();
+        }
+
         if (GUILayout.Button("Add Curve"))
         {
             Undo.RecordObject(spline, "Add Curve");
             spline.AddCurve();
+            EditorUtility.SetDirty(spline);
+        }
+    }
+
+    private void DrawSelectedPointInspector()
+    {
+        GUILayout.Label("Selected Point");
+        EditorGUI.BeginChangeCheck();
+        Vector3 point = EditorGUILayout.Vector3Field("Position", spline.GetControlPoint(selectedIndex));
+        if (EditorGUI.EndChangeCheck())
+        {
+            Undo.RecordObject(spline, "Move Point");
+            EditorUtility.SetDirty(spline);
+            spline.SetControlPoint(selectedIndex, point);
+        }
+
+        EditorGUI.BeginChangeCheck();
+        BezierControlPointMode mode = (BezierControlPointMode)
+            EditorGUILayout.EnumPopup("Mode", spline.GetControlPointMode(selectedIndex));
+        if (EditorGUI.EndChangeCheck())
+        {
+            Undo.RecordObject(spline, "Change Point Mode");
+            spline.SetControlPointMode(selectedIndex, mode);
             EditorUtility.SetDirty(spline);
         }
     }
@@ -67,15 +104,26 @@ public class BezierSplineInspector : Editor
         }
     }
 
+    private static Color[] modeColors = {
+        Color.white,
+        Color.yellow,
+        Color.cyan
+    };
+
     private Vector3 ShowPoint(int index)
     {
-        Vector3 point = handleTransform.TransformPoint(spline.points[index]);
+        Vector3 point = handleTransform.TransformPoint(spline.GetControlPoint(index));
 
         float size = HandleUtility.GetHandleSize(point);
-        Handles.color = Color.white;
+        if (index == 0)
+        {
+            size *= 2f;
+        }
+        Handles.color = modeColors[(int)spline.GetControlPointMode(index)];
         if (Handles.Button(point, handleRotation, size * handleSize, size * pickSize, Handles.DotCap))
         {
             selectedIndex = index;
+            Repaint();
         }
 
         if (selectedIndex == index)
@@ -86,7 +134,7 @@ public class BezierSplineInspector : Editor
             {
                 Undo.RecordObject(spline, "Move Point");
                 EditorUtility.SetDirty(spline);
-                spline.points[index] = handleTransform.InverseTransformPoint(point);
+                spline.SetControlPoint(index, handleTransform.InverseTransformPoint(point));
             }
         }
         return point;
