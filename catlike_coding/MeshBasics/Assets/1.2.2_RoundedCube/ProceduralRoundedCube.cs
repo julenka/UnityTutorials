@@ -18,8 +18,7 @@ public class ProceduralRoundedCube : MonoBehaviour
 
     void Start()
     {
-        Generate();
-    }
+        Generate();.
 
     private void Generate()
     {
