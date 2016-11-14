@@ -9,14 +9,19 @@
 
 
 float4 _Tint;
-sampler2D _MainTex;
-float4 _MainTex_ST;
+sampler2D _MainTex, _DetailTex;
+float4 _MainTex_ST, _DetailTex_ST;
 float _Smoothness;
 float4  _Metallic;
+// From bump mapping section (6.2)
+//sampler2D _HeightMap;
+sampler2D _NormalMap, _DetailNormalMap;
+float4 _HeightMap_TexelSize;
+float _BumpScale, _DetailBumpScale;
 
 struct Interpolators {
     float4 position : SV_POSITION;
-    float2 uv : TEXCOORD0;
+    float4 uv : TEXCOORD0;
     float3 normal : TEXCOORD1;
     float3 worldPos : TEXCOORD2;
 
@@ -60,7 +65,8 @@ void ComputeVertexLightColor(inout Interpolators i) {
 
 Interpolators MyVertexProgram(VertexData v) {
     Interpolators i;
-    i.uv = TRANSFORM_TEX(v.uv, _MainTex);
+    i.uv.xy = TRANSFORM_TEX(v.uv, _MainTex);
+    i.uv.zw = TRANSFORM_TEX(v.uv, _DetailTex);
     i.position = mul(UNITY_MATRIX_MVP, v.position);
     i.normal = UnityObjectToWorldNormal(v.normal);
     i.worldPos = mul(unity_ObjectToWorld, v.position);
@@ -81,18 +87,59 @@ UnityLight CreateLight(Interpolators i) {
     return light;
 }
 
+void InitializeFragmentNormal(inout Interpolators i) {
+    // Using Unity's convenience function, but the code to decode normals is this:
+    //i.normal.xy = tex2D(_NormalMap, i.uv).wy * 2 - 1;
+    //i.normal.xy *= _BumpScale;
+    //i.normal.z = sqrt(1 - saturate(dot(i.normal.xy, i.normal.xy)));
+
+    float3 mainNormal =
+        UnpackScaleNormal(tex2D(_NormalMap, i.uv.xy), _BumpScale);
+    float3 detailNormal =
+        UnpackScaleNormal(tex2D(_DetailNormalMap, i.uv.zw), _DetailBumpScale);
+    i.normal =
+        float3(mainNormal.xy / mainNormal.z + detailNormal.xy / detailNormal.z, 1);
+
+    i.normal = i.normal.xzy;
+    i.normal = normalize(i.normal);
+    
+    
+    // From bump mapping: 6.1
+    //// This performs bump mapping
+    //float2 du = float2(_HeightMap_TexelSize.x * 0.5, 0);
+    //float u1 = tex2D(_HeightMap, i.uv - du);
+    //float u2 = tex2D(_HeightMap, i.uv + du);
+
+    //float2 dv = float2(0, _HeightMap_TexelSize.y * 0.5);
+    //float v1 = tex2D(_HeightMap, i.uv - dv);
+    //float v2 = tex2D(_HeightMap, i.uv + dv);
+
+    //// We could compute the normal as follows, by taking cross product
+    //// of the du, dv components...
+    ////float3 tu = float3(1, u2 - u1, 0);
+    ////float3 tv = float3(0, v2 - v1, 1);
+    ////i.normal = cross(tv, tu);
+
+    //// ...or we can calculate the cross product and realize that
+    //// we don't need to actually do a cross product
+    //i.normal = float3(u1 - u2, 1, v1 - v2);
+    //i.normal = normalize(i.normal);
+}
+
 float4 MyFragmentProgram(Interpolators i) : SV_TARGET{
-    float3 albedo = tex2D(_MainTex, i.uv).rgb * _Tint.rgb;
+    InitializeFragmentNormal(i);
+    float3 albedo = tex2D(_MainTex, i.uv.xy).rgb * _Tint.rgb;
+    albedo *= tex2D(_DetailTex, i.uv.zw) * unity_ColorSpaceDouble;
+
     float oneMinusReflectivity;
     float3 specularTint;
     albedo = DiffuseAndSpecularFromMetallic(albedo, _Metallic, specularTint, oneMinusReflectivity);
 
-    i.normal = normalize(i.normal);
     float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
 
     return UNITY_BRDF_PBS(albedo, specularTint, oneMinusReflectivity, _Smoothness, i.normal, viewDir, CreateLight(i), CreateIndirectLight(i));
-    /*
-
+    
+/*
     float3 reflectionDir = reflect(-lightDir, i.normal);
     float3 halfVector = normalize(lightDir + viewDir);
 
@@ -104,6 +151,7 @@ float4 MyFragmentProgram(Interpolators i) : SV_TARGET{
     _Smoothness * 100
     );
 
-    return float4(diffuse + specular, 1);*/
+    return float4(diffuse + specular, 1);
+    */
 }
 #endif
