@@ -29,6 +29,8 @@
             #pragma target 3.0
 
             #pragma multi_compile _ VERTEXLIGHT_ON
+            #pragma multi_compile_fwdadd_fullshadows
+
             #define FORWARD_BASE_PASS
 
             #pragma vertex MyVertexProgram
@@ -50,8 +52,25 @@
             #pragma vertex MyVertexProgram
             #pragma fragment MyFragmentProgram
 
-            #pragma multi_compile_fwdadd
+            #pragma multi_compile_fwdadd_fullshadows
             #include "My Lighting.cginc"
+
+            ENDCG
+        }
+
+        Pass{
+            Tags{
+            "LightMode" = "ShadowCaster"
+            }
+
+            CGPROGRAM
+
+            #pragma target 3.0
+
+            #pragma vertex MyShadowVertexProgram
+            #pragma fragment MyShadowFragmentProgram
+
+            #include "My Shadows.cginc"
 
             ENDCG
         }

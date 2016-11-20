@@ -3,6 +3,7 @@
 
 #include "AutoLight.cginc"
 #include "UnityPBSLighting.cginc"
+#include "AutoLight.cginc"
 #pragma target 3.0
 #pragma vertex MyVertexProgram
 #pragma fragment MyFragmentProgram
@@ -20,7 +21,7 @@ float4 _HeightMap_TexelSize;
 float _BumpScale, _DetailBumpScale;
 
 struct Interpolators {
-    float4 position : SV_POSITION;
+    float4 pos : SV_POSITION;
     float4 uv : TEXCOORD0;
     float3 normal : TEXCOORD1;
 #if defined(BINORMAL_PER_FRAGMENT)
@@ -32,13 +33,15 @@ struct Interpolators {
 
     float3 worldPos : TEXCOORD4;
 
+    SHADOW_COORDS(5)
+
     #if defined(VERTEXLIGHT_ON)
         float3 vertexLightColor : TEXCOORD5;
     #endif
 };
 
 struct VertexData {
-    float4 position : POSITION;
+    float4 vertex : POSITION;
     float2 uv : TEXCOORD0;
     float3 normal : NORMAL;
     float4 tangent : TANGENT;
@@ -80,7 +83,7 @@ Interpolators MyVertexProgram(VertexData v) {
     Interpolators i;
     i.uv.xy = TRANSFORM_TEX(v.uv, _MainTex);
     i.uv.zw = TRANSFORM_TEX(v.uv, _DetailTex);
-    i.position = mul(UNITY_MATRIX_MVP, v.position);
+    i.pos = mul(UNITY_MATRIX_MVP, v.vertex);
     i.normal = UnityObjectToWorldNormal(v.normal);
 #if defined(BINORMAL_PER_FRAGMENT)
     i.tangent = float4(UnityObjectToWorldDir(v.tangent.xyz), v.tangent.w);
@@ -90,7 +93,10 @@ Interpolators MyVertexProgram(VertexData v) {
 #endif
 
     i.tangent = float4(UnityObjectToWorldDir(v.tangent.xyz), v.tangent.w);
-    i.worldPos = mul(unity_ObjectToWorld, v.position);
+    i.worldPos = mul(unity_ObjectToWorld, v.vertex);
+
+    TRANSFER_SHADOW(i);
+
     ComputeVertexLightColor(i);
     return i;
 }
@@ -102,7 +108,9 @@ UnityLight CreateLight(Interpolators i) {
 #else
     light.dir = _WorldSpaceLightPos0.xyz;
 #endif
-    UNITY_LIGHT_ATTENUATION(attenuation, 0, i.worldPos);
+
+    UNITY_LIGHT_ATTENUATION(attenuation, i, i.worldPos);
+
     light.color = _LightColor0.rgb * attenuation;
     light.ndotl = DotClamped(i.normal, light.dir);
     return light;
@@ -131,7 +139,7 @@ void InitializeFragmentNormal(inout Interpolators i) {
         tangentSpaceNormal.z * i.normal
     ); 
 
-    i.normal = i.normal.xzy;
+    i.normal = i.normal.xyz;
     i.normal = normalize(i.normal);
     
     
