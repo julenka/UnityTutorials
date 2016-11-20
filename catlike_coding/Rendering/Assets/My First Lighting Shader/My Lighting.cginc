@@ -1,7 +1,6 @@
 #if !defined(MY_LIGHTING_INCLUDED)
 #define MY_LIGHTING_INCLUDED
 
-#include "AutoLight.cginc"
 #include "UnityPBSLighting.cginc"
 #include "AutoLight.cginc"
 #pragma target 3.0
