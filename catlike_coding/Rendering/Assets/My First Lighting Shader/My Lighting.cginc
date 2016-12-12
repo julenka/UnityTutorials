@@ -3,26 +3,29 @@
 
 #include "UnityPBSLighting.cginc"
 #include "AutoLight.cginc"
-#pragma target 3.0
-#pragma vertex MyVertexProgram
-#pragma fragment MyFragmentProgram
-
 
 float4 _Tint;
 sampler2D _MainTex, _DetailTex;
 float4 _MainTex_ST, _DetailTex_ST;
-float _Smoothness;
-float4  _Metallic;
-// From bump mapping section (6.2)
-//sampler2D _HeightMap;
+
 sampler2D _NormalMap, _DetailNormalMap;
-float4 _HeightMap_TexelSize;
 float _BumpScale, _DetailBumpScale;
+
+float _Metallic;
+float _Smoothness;
+
+struct VertexData {
+    float4 vertex : POSITION;
+    float3 normal : NORMAL;
+    float4 tangent : TANGENT;
+    float2 uv : TEXCOORD0;
+};
 
 struct Interpolators {
     float4 pos : SV_POSITION;
     float4 uv : TEXCOORD0;
     float3 normal : TEXCOORD1;
+
 #if defined(BINORMAL_PER_FRAGMENT)
     float4 tangent : TEXCOORD2;
 #else
@@ -34,33 +37,10 @@ struct Interpolators {
 
     SHADOW_COORDS(5)
 
-    #if defined(VERTEXLIGHT_ON)
-        float3 vertexLightColor : TEXCOORD5;
-    #endif
-};
-
-struct VertexData {
-    float4 vertex : POSITION;
-    float2 uv : TEXCOORD0;
-    float3 normal : NORMAL;
-    float4 tangent : TANGENT;
-};
-
-UnityIndirect CreateIndirectLight(Interpolators i) {
-    UnityIndirect indirectLight;
-    indirectLight.diffuse = 0;
-    indirectLight.specular = 0;
-
 #if defined(VERTEXLIGHT_ON)
-    indirectLight.diffuse = i.vertexLightColor;
+        float3 vertexLightColor : TEXCOORD6;
 #endif
-
-#if defined(FORWARD_BASE_PASS)
-    indirectLight.diffuse += max(0, ShadeSH9(float4(i.normal, 1)));
-#endif
-
-    return indirectLight;
-}
+};
 
 void ComputeVertexLightColor(inout Interpolators i) {
 #if defined(VERTEXLIGHT_ON)
@@ -80,10 +60,10 @@ float3 CreateBinormal(float3 normal, float3 tangent, float binormalSign) {
 
 Interpolators MyVertexProgram(VertexData v) {
     Interpolators i;
-    i.uv.xy = TRANSFORM_TEX(v.uv, _MainTex);
-    i.uv.zw = TRANSFORM_TEX(v.uv, _DetailTex);
     i.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+    i.worldPos = mul(unity_ObjectToWorld, v.vertex);
     i.normal = UnityObjectToWorldNormal(v.normal);
+
 #if defined(BINORMAL_PER_FRAGMENT)
     i.tangent = float4(UnityObjectToWorldDir(v.tangent.xyz), v.tangent.w);
 #else
@@ -91,8 +71,8 @@ Interpolators MyVertexProgram(VertexData v) {
     i.binormal = CreateBinormal(i.normal, i.tangent, v.tangent.w);
 #endif
 
-    i.tangent = float4(UnityObjectToWorldDir(v.tangent.xyz), v.tangent.w);
-    i.worldPos = mul(unity_ObjectToWorld, v.vertex);
+    i.uv.xy = TRANSFORM_TEX(v.uv, _MainTex);
+    i.uv.zw = TRANSFORM_TEX(v.uv, _DetailTex);
 
     TRANSFER_SHADOW(i);
 
@@ -102,7 +82,8 @@ Interpolators MyVertexProgram(VertexData v) {
 
 UnityLight CreateLight(Interpolators i) {
     UnityLight light;
-#if defined(POINT) || defined(SPOT) || defined(POINT_COOKIE)
+
+#if defined(POINT) || defined(POINT_COOKIE) || defined(SPOT)
     light.dir = normalize(_WorldSpaceLightPos0.xyz - i.worldPos);
 #else
     light.dir = _WorldSpaceLightPos0.xyz;
@@ -115,81 +96,110 @@ UnityLight CreateLight(Interpolators i) {
     return light;
 }
 
-void InitializeFragmentNormal(inout Interpolators i) {
-    // Using Unity's convenience function, but the code to decode normals is this:
-    //i.normal.xy = tex2D(_NormalMap, i.uv).wy * 2 - 1;
-    //i.normal.xy *= _BumpScale;
-    //i.normal.z = sqrt(1 - saturate(dot(i.normal.xy, i.normal.xy)));
+float3 BoxProjection(
+    float3 direction, float3 position,
+    float4 cubemapPosition, float3 boxMin, float3 boxMax
+) {
+#if UNITY_SPECCUBE_BOX_PROJECTION
+    UNITY_BRANCH
+        if (cubemapPosition.w > 0) {
+            float3 factors =
+                ((direction > 0 ? boxMax : boxMin) - position) / direction;
+            float scalar = min(min(factors.x, factors.y), factors.z);
+            direction = direction * scalar + (position - cubemapPosition);
+        }
+#endif
+    return direction;
+}
 
+UnityIndirect CreateIndirectLight(Interpolators i, float3 viewDir) {
+    UnityIndirect indirectLight;
+    indirectLight.diffuse = 0;
+    indirectLight.specular = 0;
+
+#if defined(VERTEXLIGHT_ON)
+    indirectLight.diffuse = i.vertexLightColor;
+#endif
+
+#if defined(FORWARD_BASE_PASS)
+    indirectLight.diffuse += max(0, ShadeSH9(float4(i.normal, 1)));
+    float3 reflectionDir = reflect(-viewDir, i.normal);
+    Unity_GlossyEnvironmentData envData;
+    envData.roughness = 1 - _Smoothness;
+    envData.reflUVW = BoxProjection(
+        reflectionDir, i.worldPos,
+        unity_SpecCube0_ProbePosition,
+        unity_SpecCube0_BoxMin, unity_SpecCube0_BoxMax
+    );
+    float3 probe0 = Unity_GlossyEnvironment(
+        UNITY_PASS_TEXCUBE(unity_SpecCube0), unity_SpecCube0_HDR, envData
+    );
+    envData.reflUVW = BoxProjection(
+        reflectionDir, i.worldPos,
+        unity_SpecCube1_ProbePosition,
+        unity_SpecCube1_BoxMin, unity_SpecCube1_BoxMax
+    );
+#if UNITY_SPECCUBE_BLENDING
+    float interpolator = unity_SpecCube0_BoxMin.w;
+    UNITY_BRANCH
+        if (interpolator < 0.99999) {
+            float3 probe1 = Unity_GlossyEnvironment(
+                UNITY_PASS_TEXCUBE_SAMPLER(unity_SpecCube1, unity_SpecCube0),
+                unity_SpecCube0_HDR, envData
+            );
+            indirectLight.specular = lerp(probe1, probe0, interpolator);
+        }
+        else {
+            indirectLight.specular = probe0;
+        }
+#else
+    indirectLight.specular = probe0;
+#endif
+#endif
+
+    return indirectLight;
+}
+
+void InitializeFragmentNormal(inout Interpolators i) {
     float3 mainNormal =
         UnpackScaleNormal(tex2D(_NormalMap, i.uv.xy), _BumpScale);
     float3 detailNormal =
         UnpackScaleNormal(tex2D(_DetailNormalMap, i.uv.zw), _DetailBumpScale);
     float3 tangentSpaceNormal = BlendNormals(mainNormal, detailNormal);
+
 #if defined(BINORMAL_PER_FRAGMENT)
     float3 binormal = CreateBinormal(i.normal, i.tangent.xyz, i.tangent.w);
 #else
     float3 binormal = i.binormal;
 #endif
-    
+
     i.normal = normalize(
         tangentSpaceNormal.x * i.tangent +
         tangentSpaceNormal.y * binormal +
         tangentSpaceNormal.z * i.normal
-    ); 
-
-    i.normal = i.normal.xyz;
-    i.normal = normalize(i.normal);
-    
-    
-    // From bump mapping: 6.1
-    //// This performs bump mapping
-    //float2 du = float2(_HeightMap_TexelSize.x * 0.5, 0);
-    //float u1 = tex2D(_HeightMap, i.uv - du);
-    //float u2 = tex2D(_HeightMap, i.uv + du);
-
-    //float2 dv = float2(0, _HeightMap_TexelSize.y * 0.5);
-    //float v1 = tex2D(_HeightMap, i.uv - dv);
-    //float v2 = tex2D(_HeightMap, i.uv + dv);
-
-    //// We could compute the normal as follows, by taking cross product
-    //// of the du, dv components...
-    ////float3 tu = float3(1, u2 - u1, 0);
-    ////float3 tv = float3(0, v2 - v1, 1);
-    ////i.normal = cross(tv, tu);
-
-    //// ...or we can calculate the cross product and realize that
-    //// we don't need to actually do a cross product
-    //i.normal = float3(u1 - u2, 1, v1 - v2);
-    //i.normal = normalize(i.normal);
+    );
 }
 
 float4 MyFragmentProgram(Interpolators i) : SV_TARGET{
     InitializeFragmentNormal(i);
-    float3 albedo = tex2D(_MainTex, i.uv.xy).rgb * _Tint.rgb;
-    albedo *= tex2D(_DetailTex, i.uv.zw) * unity_ColorSpaceDouble;
 
-    float oneMinusReflectivity;
-    float3 specularTint;
-    albedo = DiffuseAndSpecularFromMetallic(albedo, _Metallic, specularTint, oneMinusReflectivity);
+float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
 
-    float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
+float3 albedo = tex2D(_MainTex, i.uv.xy).rgb * _Tint.rgb;
+albedo *= tex2D(_DetailTex, i.uv.zw) * unity_ColorSpaceDouble;
 
-    return UNITY_BRDF_PBS(albedo, specularTint, oneMinusReflectivity, _Smoothness, i.normal, viewDir, CreateLight(i), CreateIndirectLight(i));
-    
-/*
-    float3 reflectionDir = reflect(-lightDir, i.normal);
-    float3 halfVector = normalize(lightDir + viewDir);
+float3 specularTint;
+float oneMinusReflectivity;
+albedo = DiffuseAndSpecularFromMetallic(
+    albedo, _Metallic, specularTint, oneMinusReflectivity
+);
 
-
-    float3 diffuse = albedo * DotClamped(lightDir, i.normal) * lightColor;
-
-    float3 specular = specularTint * lightColor * pow(
-    DotClamped(halfVector, i.normal),
-    _Smoothness * 100
-    );
-
-    return float4(diffuse + specular, 1);
-    */
+return UNITY_BRDF_PBS(
+    albedo, specularTint,
+    oneMinusReflectivity, _Smoothness,
+    i.normal, viewDir,
+    CreateLight(i), CreateIndirectLight(i, viewDir)
+);
 }
+
 #endif
