@@ -1,4 +1,6 @@
-﻿Shader "Custom/Texture Splatting"
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Custom/Texture Splatting"
 {
     Properties{
         _SplatMap("Splat Map", 2D) = "white" {}
@@ -34,7 +36,7 @@
                     Interpolators i;
                     i.uv = TRANSFORM_TEX(v.uv, _SplatMap);
                     i.uvSplat = v.uv;
-                    i.position = mul(UNITY_MATRIX_MVP, v.position);
+                    i.position = UnityObjectToClipPos(v.position);
                     return i;
                 }
 

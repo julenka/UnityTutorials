@@ -1,4 +1,6 @@
-﻿Shader "Unlit/NormalCoords"
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Unlit/NormalCoords"
 {
     Properties
     {
@@ -29,7 +31,7 @@
             v2f MyVertexProgram(appdata v)
             {
                 v2f o;
-                o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
+                o.vertex = UnityObjectToClipPos(v.vertex);
                 o.normal = v.normal;
                 return o;
             }

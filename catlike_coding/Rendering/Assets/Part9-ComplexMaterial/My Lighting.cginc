@@ -1,3 +1,5 @@
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
 #if !defined(MY_LIGHTING_INCLUDED)
 #define MY_LIGHTING_INCLUDED
 
@@ -19,6 +21,7 @@ sampler2D _EmissionMap;
 float3 _Emission;
 
 struct VertexData {
+    UNITY_VERTEX_INPUT_INSTANCE_ID
     float4 vertex : POSITION;
     float3 normal : NORMAL;
     float4 tangent : TANGENT;
@@ -94,7 +97,7 @@ float3 CreateBinormal(float3 normal, float3 tangent, float binormalSign) {
 
 Interpolators MyVertexProgram(VertexData v) {
     Interpolators i;
-    i.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+    i.pos = UnityObjectToClipPos(v.vertex);
     i.worldPos = mul(unity_ObjectToWorld, v.vertex);
     i.normal = UnityObjectToWorldNormal(v.normal);
 

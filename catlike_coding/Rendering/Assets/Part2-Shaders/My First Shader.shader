@@ -1,4 +1,6 @@
-﻿Shader "Custom/My First Shader"
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Custom/My First Shader"
 {
     Properties{
         _Tint("Tint", Color) = (1,1,1,1)
@@ -31,7 +33,7 @@
                 Interpolators MyVertexProgram(VertexData v) {
                     Interpolators i;
                     i.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                    i.position = mul(UNITY_MATRIX_MVP, v.position);
+                    i.position = UnityObjectToClipPos(v.position);
                     return i;
                 }
 
