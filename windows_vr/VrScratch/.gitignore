@@ -1,3 +1,7 @@
+## Visual studio ignore
+/.vs/
+
+## Unity ignore
 /exe/
 
 /[Ll]ibrary/
