@@ -209,6 +209,8 @@ MonoBehaviour:
   numLevels: 8
   axiom: 0
   branchAngle: 25
+  angleRandomness: 25
+  lengthRandomness: 0.3
   branchLength: 0.3
   lineRendererPrefab: {fileID: 120045259412185888, guid: 3046992b8ff9b464396d2a405e3d6f51,
     type: 2}

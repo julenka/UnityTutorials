@@ -11,6 +11,10 @@ public partial class LTreeGenerator : MonoBehaviour
     public int numLevels;
     public string axiom = "0";
     public int branchAngle = 45;
+    [Range(0,100)]
+    public float angleRandomness = 0.0f;
+    [Range(0,100)]
+    public float lengthRandomness = 0.0f;
     [Range(0.001f, 1.0f)]
     public float branchLength = 1.0f;
     public LineRenderer lineRendererPrefab;
@@ -26,6 +30,9 @@ public partial class LTreeGenerator : MonoBehaviour
 
     private Node root;
 
+    private float currentBranchAngle;
+    private float currentBranchLength;
+    private bool updateRandomValues = true;
 
     private void CreateLTree()
     {
@@ -56,30 +63,34 @@ public partial class LTreeGenerator : MonoBehaviour
         //   - update direction by rotating 45 to the right
         foreach (char c in lString)
         {
+            if(updateRandomValues)
+            {
+                RegenerateRandom();
+            }
             if (c == '1')
             {
                 Vector3 startPos = currentPosition;
-                currentPosition += currentDirection * branchLength;
+                currentPosition += currentDirection * currentBranchLength;
                 lTreeNodes.Add(new Node(startPos, currentPosition, false));
             }
             else if (c == '0')
             {
                 Vector3 startPos = currentPosition;
-                currentPosition += currentDirection * branchLength;
+                currentPosition += currentDirection * currentBranchLength;
                 lTreeNodes.Add(new Node(startPos, currentPosition, true));
             }
             else if (c == '[')
             {
                 savedPositions.Push(currentPosition);
                 savedDirections.Push(currentDirection);
-                Quaternion q = Quaternion.Euler(0, 0, branchAngle);
+                Quaternion q = Quaternion.Euler(0, 0, currentBranchAngle);
                 currentDirection = q * currentDirection;
             }
             else if (c == ']')
             {
                 currentPosition = savedPositions.Pop();
                 currentDirection = savedDirections.Pop();
-                Quaternion q = Quaternion.Euler(0, 0, -branchAngle);
+                Quaternion q = Quaternion.Euler(0, 0, -currentBranchAngle);
                 currentDirection = q * currentDirection;
             }
         }
@@ -96,6 +107,12 @@ public partial class LTreeGenerator : MonoBehaviour
         {
             node.Draw(gameObject);
         }
+    }
+
+    private void RegenerateRandom()
+    {
+        currentBranchAngle = branchAngle + (int) (angleRandomness * (Random.value - 0.5f));
+        currentBranchLength = branchLength + lengthRandomness * (Random.value - 0.5f);
     }
 
     private void ExpandLString(int iterationsLeft)
@@ -139,6 +156,7 @@ public partial class LTreeGenerator : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+        updateRandomValues = true;
     }
 
     // Update is called once per frame
@@ -149,8 +167,16 @@ public partial class LTreeGenerator : MonoBehaviour
         // We can get the positions, add to the array, and then set the position this way.
         // Pretty inefficient...
         //lineRenderer
-        GenerateLString(axiom, numLevels);
-        CreateLTree();
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            updateRandomValues = true;
+            GenerateLString(axiom, numLevels);
+            CreateLTree();
+        }
         DrawLTree();
+        updateRandomValues = false;
     }
+
+    
 }
+
