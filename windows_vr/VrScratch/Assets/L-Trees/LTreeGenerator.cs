@@ -13,6 +13,7 @@ public partial class LTreeGenerator : MonoBehaviour
     public int branchAngle = 45;
     [Range(0.001f, 1.0f)]
     public float branchLength = 1.0f;
+    public LineRenderer lineRendererPrefab;
 
     private Vector3 currentPosition;
     private Vector3 currentDirection;
@@ -25,12 +26,19 @@ public partial class LTreeGenerator : MonoBehaviour
 
     private Node root;
 
-    private LineRenderer lineRenderer;
 
     private void CreateLTree()
     {
         savedPositions = new Stack<Vector3>();
         savedDirections = new Stack<Vector3>();
+
+        if (lTreeNodes != null)
+        {
+            foreach (var node in lTreeNodes)
+            {
+                node.Destroy();
+            }
+        }
         lTreeNodes = new List<Node>();
 
         currentDirection = startDirection;
@@ -74,6 +82,11 @@ public partial class LTreeGenerator : MonoBehaviour
                 Quaternion q = Quaternion.Euler(0, 0, -branchAngle);
                 currentDirection = q * currentDirection;
             }
+        }
+
+        foreach (var node in lTreeNodes)
+        {
+            node.Initialize(this);
         }
     }
 
@@ -126,11 +139,6 @@ public partial class LTreeGenerator : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        lineRenderer = GetComponent<LineRenderer>();
-        if (lineRenderer == null)
-        {
-            lineRenderer = gameObject.AddComponent<LineRenderer>();
-        }
     }
 
     // Update is called once per frame
