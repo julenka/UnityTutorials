@@ -1,0 +1,4 @@
+- Make the tree 3D
+- Use particles at the ends to simulate flowers
+- Make particles float off
+- Adjust the width of the trunk based on height
