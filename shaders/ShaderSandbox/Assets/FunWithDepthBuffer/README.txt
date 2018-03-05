@@ -1,5 +1,6 @@
 Code in this folder based off of tutorial from https://chrismflynn.wordpress.com/2012/09/06/fun-with-shaders-and-the-depth-buffer/#more-42 and http://williamchyr.com/2013/11/unity-shaders-depth-and-normal-textures/ (used this for "DepthBufferTest")
 
+I actually couldn't get the depth shader to work out of the box and following https://forum.unity.com/threads/need-help-depth-texture-intersection-highlight-shader-on-mobile-android.387692/ ended up buying the scan effect shader from https://www.assetstore.unity3d.com/en/#!/content/47893. I then worked backwards from that shader to fix my current shader. The notes are in the shader "IntersectionTest.shader"
 
 
 Notes

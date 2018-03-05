@@ -12,11 +12,11 @@ public class TurnOnIntersectionTest : MonoBehaviour
         GetComponent<Camera>().depthTextureMode = DepthTextureMode.Depth;
     }
 
-    private void OnRenderImage(RenderTexture source, RenderTexture destination)
-    {
-        //Graphics.Blit(source, destination);
-        //mat is the material which contains the shader
-        //we are passing the destination RenderTexture to
-        Graphics.Blit(source, destination, depthMaterial);
-    }
+    //private void OnRenderImage(RenderTexture source, RenderTexture destination)
+    //{
+    //    //Graphics.Blit(source, destination);
+    //    //mat is the material which contains the shader
+    //    //we are passing the destination RenderTexture to
+    //    //Graphics.Blit(source,   destination, depthMaterial);
+    //}
 }

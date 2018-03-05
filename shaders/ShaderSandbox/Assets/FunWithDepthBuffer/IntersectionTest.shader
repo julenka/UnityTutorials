@@ -40,6 +40,7 @@ Shader "Custom/IntersectionHighlights"
         v2f o;
         o.pos = UnityObjectToClipPos(v.vertex);
         o.projPos = ComputeScreenPos(o.pos);
+
         return o;
     }
 
@@ -48,22 +49,22 @@ Shader "Custom/IntersectionHighlights"
         float4 finalColor = _RegularColor;
 
         //Get the distance to the camera from the depth buffer for this point
-        float sceneZ = LinearEyeDepth(tex2Dproj(_CameraDepthTexture,
-            UNITY_PROJ_COORD(i.projPos)).r);
+        float sceneZ = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
 
         //Actual distance to the camera
-        float partZ = i.projPos.z;
+        // Change 1: Instead of using projPos.z, use projPos.w
+        float partZ = i.projPos.w;
 
         //If the two are similar, then there is an object intersecting with our object
         float diff = (abs(sceneZ - partZ)) /
             _HighlightThresholdMax;
-
-        if (diff <= 1)
-        {
-            finalColor = lerp(_HighlightColor,
-                _RegularColor,
-                float4(diff, diff, diff, diff));
-        }
+        float dist = sceneZ - partZ;
+        // change 2: Make this an exponential instead of linear
+        float mult = pow(1 - saturate(dist / _HighlightThresholdMax), 3);
+        // Change 3: Invert from regular to highlight
+        finalColor = lerp(_RegularColor,
+            _HighlightColor,
+            mult);
 
         half4 c;
         c.r = finalColor.r;
