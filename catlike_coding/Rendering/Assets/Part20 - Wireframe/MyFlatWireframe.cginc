@@ -5,13 +5,21 @@
 
 #include "My Lighting Input.cginc"
 
+float3 _WireframeColor;
+float _WireframeSmoothing;
+float _WireframeThickness;
+
 float3 GetAlbedoWithWireframe (Interpolators i) {
     float3 albedo = GetAlbedo(i);
-    // float3 barys;
-    // barys.xy = i.barycentricCoordinates;
-    // barys.z = 1 - barys.x - barys.y;
-    // albedo = barys;
-    return albedo;
+    float3 barys;
+    barys.xy = i.barycentricCoordinates;
+    barys.z = 1 - barys.x - barys.y;
+    float3 deltas = fwidth(barys);
+    float3 smoothing = deltas * _WireframeSmoothing;
+    float3 thickness = deltas * _WireframeThickness;
+    barys = smoothstep(thickness, thickness + smoothing, barys);
+    float minBary = min(barys.x, min(barys.y, barys.z));
+    return lerp(_WireframeColor, albedo, minBary);
 }
 
 #define ALBEDO_FUNCTION GetAlbedoWithWireframe

@@ -147,6 +147,9 @@ public class MyLightingShaderGUI : ShaderGUI {
 		DoEmission();
 		DoDetailMask();
 		editor.TextureScaleOffsetProperty(mainTex);
+		if (target.HasProperty("_WireframeColor")) {
+			DoWireframe();
+		}
 	}
 
 	void DoAlphaCutoff () {
@@ -219,6 +222,24 @@ public class MyLightingShaderGUI : ShaderGUI {
 		if (EditorGUI.EndChangeCheck() && tex != map.textureValue) {
 			SetKeyword("_PARALLAX_MAP", map.textureValue);
 		}
+	}
+
+	void DoWireframe () {
+		GUILayout.Label("Wireframe", EditorStyles.boldLabel);
+		EditorGUI.indentLevel += 2;
+		editor.ShaderProperty(
+			FindProperty("_WireframeColor"),
+			MakeLabel("Color")
+		);
+		editor.ShaderProperty(
+			FindProperty("_WireframeSmoothing"),
+			MakeLabel("Smoothing", "In screen space.")
+		);
+		editor.ShaderProperty(
+			FindProperty("_WireframeThickness"),
+			MakeLabel("Thickness", "In screen space.")
+		);
+		EditorGUI.indentLevel -= 2;
 	}
 
 	void DoOcclusion () {
