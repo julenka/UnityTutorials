@@ -1,3 +1,5 @@
+// Upgrade NOTE: upgraded instancing buffer 'InstanceProperties' to new syntax.
+
 // Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
 #if !defined(MY_LIGHTING_INCLUDED)
@@ -6,9 +8,10 @@
 #include "UnityPBSLighting.cginc"
 #include "AutoLight.cginc"
 
-UNITY_INSTANCING_CBUFFER_START(InstanceProperties)
+UNITY_INSTANCING_BUFFER_START(InstanceProperties)
 UNITY_DEFINE_INSTANCED_PROP(float4, _Tint)
-UNITY_INSTANCING_CBUFFER_END
+#define _Tint_arr InstanceProperties
+UNITY_INSTANCING_BUFFER_END(InstanceProperties)
 sampler2D _MainTex, _DetailTex;
 float4 _MainTex_ST, _DetailTex_ST;
 
@@ -228,7 +231,7 @@ float4 MyFragmentProgram(Interpolators i) : SV_TARGET{
 
     float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
 
-    float3 albedo = tex2D(_MainTex, i.uv.xy).rgb * UNITY_ACCESS_INSTANCED_PROP(_Tint).rgb;
+    float3 albedo = tex2D(_MainTex, i.uv.xy).rgb * UNITY_ACCESS_INSTANCED_PROP(_Tint_arr, _Tint).rgb;
     albedo *= tex2D(_DetailTex, i.uv.zw) * unity_ColorSpaceDouble;
 
     float3 specularTint;
