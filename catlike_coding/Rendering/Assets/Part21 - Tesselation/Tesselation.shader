@@ -1,4 +1,4 @@
-﻿Shader "Custom/Flat Wireframe" {
+﻿Shader "Custom/Tesselation" {
 
 	Properties {
 		_Color ("Tint", Color) = (1, 1, 1, 1)
@@ -62,7 +62,7 @@
 
 			CGPROGRAM
 
-			#pragma target 4.0
+			#pragma target 4.6
 
 			#pragma shader_feature _ _RENDERING_CUTOUT _RENDERING_FADE _RENDERING_TRANSPARENT
 			#pragma shader_feature _METALLIC_MAP
@@ -79,16 +79,17 @@
 
 			#pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
-			#pragma multi_compile_instancing
-			#pragma instancing_options lodfade force_same_maxcount_for_gl
 
-			#pragma vertex MyVertexProgram
+			#pragma vertex MyTesselationVertexProgram
 			#pragma fragment MyFragmentProgram
 			#pragma geometry MyGeometryProgram
+			#pragma hull MyHullProgram
+		#pragma domain MyDomainProgram
 
 			#define FORWARD_BASE_PASS
 
 			#include "MyFlatWireframe.cginc"
+			#include "MyTesselation.cginc"
 
 			ENDCG
 		}
@@ -103,7 +104,7 @@
 
 			CGPROGRAM
 
-			#pragma target 4.0
+			#pragma target 4.6
 
 			#pragma shader_feature _ _RENDERING_CUTOUT _RENDERING_FADE _RENDERING_TRANSPARENT
 			#pragma shader_feature _METALLIC_MAP
@@ -119,11 +120,14 @@
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_fog
 			
-			#pragma vertex MyVertexProgram
+			#pragma vertex MyTesselationVertexProgram
 			#pragma fragment MyFragmentProgram
 			#pragma geometry MyGeometryProgram
+			#pragma hull MyHullProgram
+			#pragma domain MyDomainProgram
 
 			#include "MyFlatWireframe.cginc"
+			#include "MyTesselation.cginc"
 
 			ENDCG
 		}
@@ -135,7 +139,7 @@
 
 			CGPROGRAM
 
-			#pragma target 4.0
+			#pragma target 4.6
 			#pragma exclude_renderers nomrt
 
 			#pragma shader_feature _ _RENDERING_CUTOUT
@@ -152,16 +156,18 @@
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
 			#pragma multi_compile_prepassfinal
-			#pragma multi_compile_instancing
-			#pragma instancing_options lodfade
 
-			#pragma vertex MyVertexProgram
+			#pragma vertex MyTesselationVertexProgram
 			#pragma fragment MyFragmentProgram
 			#pragma geometry MyGeometryProgram
+			#pragma hull MyHullProgram
+			#pragma domain MyDomainProgram
+
 
 			#define DEFERRED_PASS
 
 			#include "MyFlatWireframe.cginc"
+			#include "MyTesselation.cginc"
 
 			ENDCG
 		}
@@ -182,8 +188,6 @@
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
 			#pragma multi_compile_shadowcaster
-			#pragma multi_compile_instancing
-			#pragma instancing_options lodfade force_same_maxcount_for_gl
 
 			#pragma vertex MyShadowVertexProgram
 			#pragma fragment MyShadowFragmentProgram

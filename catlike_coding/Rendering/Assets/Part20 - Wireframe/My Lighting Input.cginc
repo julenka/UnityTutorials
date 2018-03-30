@@ -139,7 +139,6 @@ struct Interpolators {
 		float3 tangentViewDir : TEXCOORD8;
 	#endif
 
-	
 	#if defined (CUSTOM_GEOMETRY_INTERPOLATORS)
 		CUSTOM_GEOMETRY_INTERPOLATORS
 	#endif
