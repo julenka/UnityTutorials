@@ -31,6 +31,10 @@
 		_WireframeSmoothing ("Wireframe Smoothing", Range(0, 10)) = 1
 		_WireframeThickness ("Wireframe Thickness", Range(0, 10)) = 1
 
+		_TessellationUniform ("Tessellation Uniform", Range(1, 64)) = 1
+		_TessellationEdgeLength ("Tessellation Edge Length", Range(5, 100)) = 50
+
+
 		[HideInInspector] _SrcBlend ("_SrcBlend", Float) = 1
 		[HideInInspector] _DstBlend ("_DstBlend", Float) = 0
 		[HideInInspector] _ZWrite ("_ZWrite", Float) = 1
@@ -74,6 +78,7 @@
 			#pragma shader_feature _DETAIL_MASK
 			#pragma shader_feature _DETAIL_ALBEDO_MAP
 			#pragma shader_feature _DETAIL_NORMAL_MAP
+			#pragma shader_feature _TESSELLATION_EDGE
 
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
@@ -84,7 +89,7 @@
 			#pragma fragment MyFragmentProgram
 			#pragma geometry MyGeometryProgram
 			#pragma hull MyHullProgram
-		#pragma domain MyDomainProgram
+			#pragma domain MyDomainProgram
 
 			#define FORWARD_BASE_PASS
 
@@ -114,6 +119,7 @@
 			#pragma shader_feature _DETAIL_MASK
 			#pragma shader_feature _DETAIL_ALBEDO_MAP
 			#pragma shader_feature _DETAIL_NORMAL_MAP
+			#pragma shader_feature _TESSELLATION_EDGE
 
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
@@ -152,6 +158,7 @@
 			#pragma shader_feature _DETAIL_MASK
 			#pragma shader_feature _DETAIL_ALBEDO_MAP
 			#pragma shader_feature _DETAIL_NORMAL_MAP
+			#pragma shader_feature _TESSELLATION_EDGE
 
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
