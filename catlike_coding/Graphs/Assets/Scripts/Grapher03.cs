@@ -57,8 +57,8 @@ public class Grapher03 : MonoBehaviour
                 {
                     Vector3 p = new Vector3(x * increment, y * increment, z * increment);
                     points[i].position = p;
-                    points[i].color = new Color(p.x, p.y, p.z);
-                    points[i++].size = 0.1f;
+                    points[i].startColor = new Color(p.x, p.y, p.z);
+                    points[i++].startSize = 0.1f;
                 }
 
             }
@@ -79,18 +79,18 @@ public class Grapher03 : MonoBehaviour
         {
             for (int i = 0; i < points.Length; i++)
             {
-                Color c = points[i].color;
+                Color c = points[i].startColor;
                 c.a = f(points[i].position, t) >= threshold ? 1f : 0f;
-                points[i].color = c;
+                points[i].startColor = c;
             }
         }
         else
         {
             for (int i = 0; i < points.Length; i++)
             {
-                Color c = points[i].color;
+                Color c = points[i].startColor;
                 c.a = f(points[i].position, t);
-                points[i].color = c;
+                points[i].startColor = c;
             }
         }
 

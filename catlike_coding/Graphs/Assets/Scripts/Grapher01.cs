@@ -40,8 +40,8 @@ public class Grapher01 : MonoBehaviour
         {
             float x = i * increment;
             points[i].position = new Vector3(x, 0f, 0f);
-            points[i].color = new Color(x, 0f, 0f);
-            points[i].size = 0.1f;
+            points[i].startColor = new Color(x, 0f, 0f);
+            points[i].startSize = 0.1f;
         }
     }
 
@@ -66,9 +66,9 @@ public class Grapher01 : MonoBehaviour
             p.y = functionDelegates[(int)function](p.x);
             points[i].position = p;
 
-            Color c = points[i].color;
+            Color c = points[i].startColor;
             c.g = p.y;
-            points[i].color = c;
+            points[i].startColor = c;
         }
 
         GetComponent<ParticleSystem>().SetParticles(points, points.Length);
